@@ -8,15 +8,34 @@ const eraserTool = document.getElementById("eraser");
 const fillTool = document.getElementById("fill-bucket");
 const colorPicker = document.getElementById("color-picker");
 const sizePicker = document.getElementById("size-picker");
+const undoButton = document.getElementById("undo");
+const redoButton = document.getElementById("redo");
 
 
 paintCanvas.addEventListener("mousedown", BeginDrawing);
-paintCanvas.addEventListener("mouseup", StopDrawing);
+paintCanvas.addEventListener("mousemove", MovePennTool);
+
+paintCanvas.addEventListener("mouseup", ()=>{
+    pennToCanvas = false;
+    AddToSteps();
+});
+
+paintCanvas.addEventListener("mouseleave", ()=>{
+    pennToCanvas = false;
+    AddToSteps();
+});
+
 document.addEventListener("keydown", SwitchTool);
 
-sizePicker.value = 30;
+sizePicker.value = 5;
+let lastX;
+let lastY;
+pennToCanvas = false;
 
 let currentTool = 1;
+
+let stepsOfDrawing = [];
+let currentNumberOfSteps = -1;
 
 
 pennTool.onclick = ()=>{
@@ -32,19 +51,63 @@ fillTool.onclick = ()=>{
     SelectFillTool();
 }
 
+undoButton.onclick = ()=>{
+    StepBackwards();
+}
+
+redoButton.onclick = ()=>{
+    StepForwards();
+}
+
 let gettingData = true;
 
-function BeginDrawing(mousedown){
-    if(mousedown){
-        paintCanvas.addEventListener("mousemove", MovePaintBrush);
+EstablishBackground();
+function EstablishBackground(){
+    let background = new Image();
+    background.src = "./whitebackground.png";
+    background.onload = () =>{
+        paintCanvasContext.drawImage(background, 0, 0, 700, 500);
     }
 }
 
-function StopDrawing(mouseup){
-    if(mouseup){
-        paintCanvas.removeEventListener("mousemove", MovePaintBrush);
+
+
+function BeginDrawing(mousedown){
+    pennToCanvas = true;
+    const paintCanvasRect = paintCanvas.getBoundingClientRect();
+
+    let courserX  = mousedown.x - paintCanvasRect.left;
+    let courserY = mousedown.y - paintCanvasRect.top;
+
+    DrawWithPenn(courserX, courserY, false);
+
+}
+
+function MovePennTool(event){
+    const paintCanvasRect = paintCanvas.getBoundingClientRect();
+
+    let courserX  = event.x - paintCanvasRect.left;
+    let courserY = event.y - paintCanvasRect.top;
+
+    switch(currentTool){
+        case 1:
+            // paintCanvasContext.fillStyle = colorPicker.value;
+            // paintCanvasContext.fillRect(courserX, courserY, sizePicker.value,sizePicker.value);
+            if(pennToCanvas){
+                DrawWithPenn(courserX, courserY, true);
+            }
+        break;
+
+        case 2:
+            if(pennToCanvas){
+                paintCanvasContext.clearRect(courserX, courserY, sizePicker.value, sizePicker.value);1
+            }
+            
+        break;
+
     }
 }
+
 
 
 function SwitchTool(key){
@@ -58,30 +121,32 @@ function SwitchTool(key){
         currentTool = 3;
 
         SelectFillTool();
+    }else if(key.ctrlKey && key.key == 'z'){
+        StepBackwards();
+    }
+
+    else if(key.ctrlKey && key.key == 'x'){
+        StepForwards();
     }
     
 }
 
-function MovePaintBrush(event){
-    const paintCanvasRect = paintCanvas.getBoundingClientRect();
 
-    let courserX  = event.x - paintCanvasRect.left;
-    let courserY = event.y - paintCanvasRect.top;
 
-    switch(currentTool){
-        case 1:
-            paintCanvasContext.fillStyle = colorPicker.value;
-            paintCanvasContext.fillRect(courserX, courserY, sizePicker.value,sizePicker.value);
-        break;
 
-        case 2:
-            paintCanvasContext.clearRect(courserX, courserY, sizePicker.value, sizePicker.value);
-        break;
-
+function DrawWithPenn(courserX, courserY, isDrawing){
+    if(isDrawing){
+        paintCanvasContext.beginPath();
+        paintCanvasContext.strokeStyle = colorPicker.value;
+        paintCanvasContext.lineWidth = sizePicker.value;
+        paintCanvasContext.lineJoin = "round";
+        paintCanvasContext.moveTo(lastX, lastY);
+        paintCanvasContext.lineTo(courserX, courserY)
+        paintCanvasContext.closePath();
+        paintCanvasContext.stroke();
     }
-    
-
-    
+    lastX = courserX;
+    lastY = courserY;
 }
 
 function SelectFillTool(){
@@ -196,12 +261,42 @@ function FloodFillAlgorithm(fillX, fillY){
             paintCanvasContext.fillRect(posX, posY - 1, 1, 1);
             fillQueue.push([posX, posY - 1]);
         }
-    
-
-
     }
 }
     
 
 }
+
+
+function AddToSteps(){
+    currentNumberOfSteps++;
+    if(currentNumberOfSteps < stepsOfDrawing.length){
+        stepsOfDrawing.length = currentNumberOfSteps;
+    }
+    stepsOfDrawing.push(paintCanvas.toDataURL());
+}
+
+function StepBackwards(){
+    if(currentNumberOfSteps > 0){
+        currentNumberOfSteps--;
+        let previousCanvas = new Image();
+        previousCanvas.src = stepsOfDrawing[currentNumberOfSteps];
+        previousCanvas.onload = function(){
+            paintCanvasContext.drawImage(previousCanvas, 0, 0);
+        }
+    }
+}
+
+function StepForwards(){
+    if(currentNumberOfSteps < stepsOfDrawing.length-1){
+        currentNumberOfSteps++;
+        let previousCanvas = new Image();
+        previousCanvas.src = stepsOfDrawing[currentNumberOfSteps];
+        previousCanvas.onload = function(){
+            paintCanvasContext.drawImage(previousCanvas, 0, 0);
+        }
+    }
+}
+
+//For saving shit, just make a list of this "document.getElementById('myCanvas').toDataURL()" lmao
 
