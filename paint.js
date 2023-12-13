@@ -14,6 +14,9 @@ paintCanvas.addEventListener("mousedown", BeginDrawing);
 paintCanvas.addEventListener("mouseup", StopDrawing);
 document.addEventListener("keydown", SwitchTool);
 
+sizePicker.value = 30;
+
+let currentTool = 1;
 
 
 pennTool.onclick = ()=>{
@@ -29,14 +32,7 @@ fillTool.onclick = ()=>{
     SelectFillTool();
 }
 
-let currentTool = 1;
-
-let fillX; 
-let fillY;
 let gettingData = true;
-
-let previousColor;
-
 
 function BeginDrawing(mousedown){
     if(mousedown){
@@ -93,9 +89,9 @@ function SelectFillTool(){
     paintCanvas.addEventListener("mousedown", (event) =>{
         if(gettingData){
             const paintCanvasRect = paintCanvas.getBoundingClientRect();
-            fillX = event.x - paintCanvasRect.left;
-            fillY = event.y - paintCanvasRect.top;
-            FloodFillAlgorithm();
+            let fillX = event.x - paintCanvasRect.left;
+            let fillY = event.y - paintCanvasRect.top;
+            FloodFillAlgorithm(Math.floor(fillX), Math.floor(fillY));
             gettingData = false;
         }
             
@@ -123,59 +119,35 @@ function CheckIfPixelIsColor(colorX, colorY){
     
     colorToReturn = "#" + rgbValueToHex(red) + rgbValueToHex(green) + rgbValueToHex(blue);
 
-    //console.log("CR: " + colorToReturn);
-
     return colorToReturn;
 }
 
 //This is checking to see if the current pixel is either outside the bounds of the screen, if it is the previous color, and if it is the new color
 //If ANY of those are true, move on to the next comparision (return false)
 //Else, it is a pixel that needs to be painted! (return true)
-function isValid(x, y)
+function isValid(x, y, previousColor, newColor)
 {
-    
-      if(CheckIfPixelIsColor(x, y) != previousColor || CheckIfPixelIsColor(x, y) === colorPicker.value){
+    if(x<0 || x>= paintCanvasWidth || y<0 || y>= paintCanvasHeight || CheckIfPixelIsColor(x, y) != previousColor || CheckIfPixelIsColor(x, y) === newColor){
         return false;
-      }
-      //console.log("Previous: " + previousColor);
-      //console.log("New: " + colorPicker.value);
-      return true;
+    }
+    return true;
 }
 
-let amountOfPixels = 0;
-
-function FloodFillAlgorithm(){
-
-    /* 
-        Variables needed:
-
-        -Reference to the screen
-        -Width of screen
-        -Height of screen
-        -X of clicked on space
-        -Y of clicked on space
-        -Previous color
-        -New color
-    */
+function FloodFillAlgorithm(fillX, fillY){
 
     if(currentTool == 3){
 
+    let fillQueue = [];
+        
     const colorData = paintCanvasContext.getImageData(fillX, fillY, 1, 1);
-
-    
 
     const red = colorData.data[0];
     const green = colorData.data[1];
     const blue = colorData.data[2];
     
     let newColor = colorPicker.value;
-    previousColor = "#" + rgbValueToHex(red) + rgbValueToHex(green) + rgbValueToHex(blue);
+    let previousColor = "#" + rgbValueToHex(red) + rgbValueToHex(green) + rgbValueToHex(blue);
 
-    // console.log("I PC: " + previousColor);
-    // console.log("I NC: " + newColor);
-    // console.log(" ");
-
-    let fillQueue = [];
     fillQueue.push([fillX, fillY]);
 
 
@@ -183,7 +155,6 @@ function FloodFillAlgorithm(){
     paintCanvasContext.fillRect(fillX, fillY, 1, 1);
 
     while(fillQueue.length > 0){
-        amountOfPixels++;
         currentPixel = fillQueue[fillQueue.length-1];
         fillQueue.pop();
     
@@ -192,7 +163,7 @@ function FloodFillAlgorithm(){
 
         //Check Right Pixel
 
-        if(isValid(posX + 1, posY)){
+        if(isValid(posX + 1, posY, previousColor, newColor)){
             paintCanvasContext.fillStyle = newColor;
             paintCanvasContext.fillRect(posX + 1, posY, 1, 1);
             fillQueue.push([posX+1, posY]);
@@ -200,7 +171,7 @@ function FloodFillAlgorithm(){
 
         //Check Left Pixel
 
-        if(isValid(posX - 1, posY)){
+        if(isValid(posX - 1, posY, previousColor, newColor)){
 
             //change the pixel to the left to be the new color
             paintCanvasContext.fillStyle = newColor;
@@ -210,7 +181,7 @@ function FloodFillAlgorithm(){
 
         //Check Top Pixel
 
-        if(isValid(posX, posY + 1)){
+        if(isValid(posX, posY + 1, previousColor, newColor)){
             //change the pixel to the top to be the new color
             paintCanvasContext.fillStyle = newColor;
             paintCanvasContext.fillRect(posX, posY + 1, 1, 1);
@@ -219,7 +190,7 @@ function FloodFillAlgorithm(){
 
         //Check Bottom Pixel
 
-        if(isValid(posX, posY - 1)){
+        if(isValid(posX, posY - 1, previousColor, newColor)){
             //change the pixel to the bottom to be the new color
             paintCanvasContext.fillStyle = newColor;
             paintCanvasContext.fillRect(posX, posY - 1, 1, 1);
