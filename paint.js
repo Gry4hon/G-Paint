@@ -6,62 +6,61 @@ const paintCanvasHeight = paintCanvas.clientHeight;
 const pennTool = document.getElementById("penn");
 const eraserTool = document.getElementById("eraser");
 const fillTool = document.getElementById("fill-bucket");
-const colorPicker = document.getElementById("color-picker");
-const sizePicker = document.getElementById("size-picker");
 const undoButton = document.getElementById("undo");
 const redoButton = document.getElementById("redo");
+const saveButton = document.getElementById("save");
 
+const colorPicker = document.getElementById("color-picker");
+const sizePicker = document.getElementById("size-picker");
+
+document.addEventListener("keydown", SwitchTool);
 
 paintCanvas.addEventListener("mousedown", BeginDrawing);
 paintCanvas.addEventListener("mousemove", MovePennTool);
-
 paintCanvas.addEventListener("mouseup", ()=>{
     pennToCanvas = false;
     AddToSteps();
 });
-
 paintCanvas.addEventListener("mouseleave", ()=>{
     pennToCanvas = false;
     AddToSteps();
 });
 
-document.addEventListener("keydown", SwitchTool);
+EstablishBackground();
 
-sizePicker.value = 5;
+pennToCanvas = false;
+let canGetData = true;
 let lastX;
 let lastY;
-pennToCanvas = false;
 
 let currentTool = 1;
+sizePicker.value = 5;
+colorPicker.value = "#000001"
 
 let stepsOfDrawing = [];
 let currentNumberOfSteps = -1;
 
-
 pennTool.onclick = ()=>{
     currentTool = 1;
 }
-
 eraserTool.onclick = ()=>{
     currentTool = 2;
 }
-
 fillTool.onclick = ()=>{
     currentTool = 3;
     SelectFillTool();
 }
-
 undoButton.onclick = ()=>{
     StepBackwards();
 }
-
 redoButton.onclick = ()=>{
     StepForwards();
 }
 
-let gettingData = true;
+saveButton.onclick = ()=>{
+    SaveDrawing();
+}
 
-EstablishBackground();
 function EstablishBackground(){
     let background = new Image();
     background.src = "./whitebackground.png";
@@ -69,8 +68,6 @@ function EstablishBackground(){
         paintCanvasContext.drawImage(background, 0, 0, 700, 500);
     }
 }
-
-
 
 function BeginDrawing(mousedown){
     pennToCanvas = true;
@@ -80,7 +77,6 @@ function BeginDrawing(mousedown){
     let courserY = mousedown.y - paintCanvasRect.top;
 
     DrawWithPenn(courserX, courserY, false);
-
 }
 
 function MovePennTool(event){
@@ -91,8 +87,6 @@ function MovePennTool(event){
 
     switch(currentTool){
         case 1:
-            // paintCanvasContext.fillStyle = colorPicker.value;
-            // paintCanvasContext.fillRect(courserX, courserY, sizePicker.value,sizePicker.value);
             if(pennToCanvas){
                 DrawWithPenn(courserX, courserY, true);
             }
@@ -102,13 +96,10 @@ function MovePennTool(event){
             if(pennToCanvas){
                 paintCanvasContext.clearRect(courserX, courserY, sizePicker.value, sizePicker.value);1
             }
-            
         break;
 
     }
 }
-
-
 
 function SwitchTool(key){
     if(key.key == '1'){
@@ -119,20 +110,16 @@ function SwitchTool(key){
     }
     else if(key.key == '3'){
         currentTool = 3;
-
         SelectFillTool();
-    }else if(key.ctrlKey && key.key == 'z'){
+    }
+    else if(key.ctrlKey && key.key == 'z'){
         StepBackwards();
     }
-
     else if(key.ctrlKey && key.key == 'x'){
         StepForwards();
     }
     
 }
-
-
-
 
 function DrawWithPenn(courserX, courserY, isDrawing){
     if(isDrawing){
@@ -149,23 +136,22 @@ function DrawWithPenn(courserX, courserY, isDrawing){
     lastY = courserY;
 }
 
-function SelectFillTool(){
-    
+
+function SelectFillTool(){   
     paintCanvas.addEventListener("mousedown", (event) =>{
-        if(gettingData){
+        if(canGetData){
             const paintCanvasRect = paintCanvas.getBoundingClientRect();
             let fillX = event.x - paintCanvasRect.left;
             let fillY = event.y - paintCanvasRect.top;
             FloodFillAlgorithm(Math.floor(fillX), Math.floor(fillY));
-            gettingData = false;
+            canGetData = false;
         }
             
     });
     paintCanvas.addEventListener("mouseup", () =>{
-        gettingData = true;
+        canGetData = true;
     });
 }
-
 
 function rgbValueToHex(colorValue) {
     let hexVersionOfColorValue = colorValue.toString(16);
@@ -173,7 +159,6 @@ function rgbValueToHex(colorValue) {
 }
   
 function CheckIfPixelIsColor(colorX, colorY){
-
     let colorToReturn;
 
     const colorData = paintCanvasContext.getImageData(colorX, colorY, 1, 1);
@@ -215,7 +200,6 @@ function FloodFillAlgorithm(fillX, fillY){
 
     fillQueue.push([fillX, fillY]);
 
-
     paintCanvasContext.fillStyle = newColor;
     paintCanvasContext.fillRect(fillX, fillY, 1, 1);
 
@@ -226,44 +210,45 @@ function FloodFillAlgorithm(fillX, fillY){
         let posX = currentPixel[0];
         let posY = currentPixel[1];
 
-        //Check Right Pixel
-
         if(isValid(posX + 1, posY, previousColor, newColor)){
             paintCanvasContext.fillStyle = newColor;
             paintCanvasContext.fillRect(posX + 1, posY, 1, 1);
             fillQueue.push([posX+1, posY]);
         }
 
-        //Check Left Pixel
-
         if(isValid(posX - 1, posY, previousColor, newColor)){
-
-            //change the pixel to the left to be the new color
             paintCanvasContext.fillStyle = newColor;
             paintCanvasContext.fillRect(posX - 1, posY, 1, 1);
             fillQueue.push([posX-1, posY]);
         }
 
-        //Check Top Pixel
-
         if(isValid(posX, posY + 1, previousColor, newColor)){
-            //change the pixel to the top to be the new color
             paintCanvasContext.fillStyle = newColor;
             paintCanvasContext.fillRect(posX, posY + 1, 1, 1);
             fillQueue.push([posX, posY + 1]);
         }
 
-        //Check Bottom Pixel
-
         if(isValid(posX, posY - 1, previousColor, newColor)){
-            //change the pixel to the bottom to be the new color
             paintCanvasContext.fillStyle = newColor;
             paintCanvasContext.fillRect(posX, posY - 1, 1, 1);
             fillQueue.push([posX, posY - 1]);
         }
     }
+    }
 }
-    
+
+/*
+var image = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");  
+// here is the most important part because if you dont replace you will get a DOM 18 exception.
+
+
+window.location.href=image; // it will save locally
+*/
+
+
+function SaveDrawing(){
+    let drawingToSave = paintCanvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+    window.location.href = drawingToSave;
 
 }
 
@@ -298,5 +283,4 @@ function StepForwards(){
     }
 }
 
-//For saving shit, just make a list of this "document.getElementById('myCanvas').toDataURL()" lmao
 
