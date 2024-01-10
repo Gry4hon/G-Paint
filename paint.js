@@ -172,9 +172,6 @@ function CheckIfPixelIsColor(colorX, colorY){
     return colorToReturn;
 }
 
-//This is checking to see if the current pixel is either outside the bounds of the screen, if it is the previous color, and if it is the new color
-//If ANY of those are true, move on to the next comparision (return false)
-//Else, it is a pixel that needs to be painted! (return true)
 function isValid(x, y, previousColor, newColor)
 {
     if(x<0 || x>= paintCanvasWidth || y<0 || y>= paintCanvasHeight || CheckIfPixelIsColor(x, y) != previousColor || CheckIfPixelIsColor(x, y) === newColor){
@@ -236,14 +233,6 @@ function FloodFillAlgorithm(fillX, fillY){
     }
     }
 }
-
-/*
-var image = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");  
-// here is the most important part because if you dont replace you will get a DOM 18 exception.
-
-
-window.location.href=image; // it will save locally
-*/
 
 
 function SaveDrawing(){
